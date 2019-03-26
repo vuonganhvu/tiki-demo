@@ -1,1 +1,8 @@
-Circular dependency between A1 and A2 detected
+A1
+4.0
+A2
+30.0
+B1
+5.0
+B4
+5.0

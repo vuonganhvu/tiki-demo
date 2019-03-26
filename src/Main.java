@@ -153,7 +153,9 @@ public class Main {
             if(errorMessage != null && !errorMessage.isEmpty()) {
                 bw.write(errorMessage);
             } else {
-                for (String key : output.keySet()) {
+                List<String> keySet = new ArrayList<>(output.keySet());
+                Collections.sort(keySet);
+                for (String key : keySet) {
                     bw.write(key);
                     bw.newLine();
                     bw.write(output.get(key).toString());
