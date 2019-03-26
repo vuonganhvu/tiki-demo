@@ -5,21 +5,25 @@ import java.util.regex.Pattern;
 
 public class Main {
     private static Map<String, Value> mapInput = new HashMap<>();
+    private final static String inputFile = "inputStream.txt";
+    private final static String outputFile = "outStream.txt";
 
     public static void main(String[] args) {
 
-        String filePath = "inputStream.txt";
-        readFile(filePath);
+        readFile();
 
         try {
             Map<String, Double> output = process(mapInput.size());
-
             writeFile(output, null);
+
         } catch (CircularDependencyException e) {
             System.out.println(e.message);
             writeFile(null, e.message);
+        } catch (Exception e) {
+            writeFile(null, "Error system");
         }
     }
+
 
     private static Map<String, Double> process(int maxInput) throws CircularDependencyException {
 
@@ -40,18 +44,18 @@ public class Main {
     }
 
     private static Double processValue(Value value, Map<String, Double> mapProcess, List<String> dependencies) throws CircularDependencyException {
+
         if (Status.NEW.equals(value.getStatus())) {
             value.setStatus(Status.PROCESS);
             String polishPostfix = value.getPolishPostfix();
             if (isNumber(polishPostfix)) {
                 mapProcess.put(value.getKey(), Double.valueOf(polishPostfix));
-                value.setStatus(Status.DONE);
             } else {
                 String[] inputs = polishPostfix.split(" ");
                 Double ret = calculator(inputs, mapProcess, dependencies);
                 mapProcess.put(value.getKey(), ret);
-                value.setStatus(Status.DONE);
             }
+            value.setStatus(Status.DONE);
         } else if (Status.PROCESS.equals(value.getStatus())) {
             dependencies.remove(value.getKey());
             throw new CircularDependencyException(String.format("Circular dependency between %s and %s detected", value.getKey(), String.join(", ", dependencies)));
@@ -118,9 +122,9 @@ public class Main {
         return operands.pop();
     }
 
-    private static  List<Value> readFile(String filePath) {
+    private static List<Value> readFile() {
         List<Value> valueList = new ArrayList<>();
-        try(BufferedReader bufferedReader = new BufferedReader(new FileReader(filePath))) {
+        try (BufferedReader bufferedReader = new BufferedReader(new FileReader(inputFile))) {
 
             //Reading the file
             String currentLine;
@@ -139,7 +143,7 @@ public class Main {
                 mapInput.put(value.getKey(), value);
             }
         } catch (FileNotFoundException e) {
-            System.out.println("The file " + filePath + "is not found !");
+            System.out.println("The file " + inputFile + "is not found !");
             e.printStackTrace();
         } catch (IOException e) {
             System.out.println("Problem occurs when reading file !");
@@ -150,8 +154,7 @@ public class Main {
     }
 
     private static void writeFile(Map<String, Double> output, String errorMessage) {
-        String filePath = "outStream.txt";
-        try (BufferedWriter bw = new BufferedWriter(new FileWriter(filePath))) {
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(outputFile))) {
             if(errorMessage != null && !errorMessage.isEmpty()) {
                 bw.write(errorMessage);
             } else {
