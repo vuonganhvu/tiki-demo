@@ -32,14 +32,14 @@ public class Main {
         Map<String, Double> mapProcess = new HashMap<>();
         int i = 0;
         while (mapProcess.size() < maxInput && i < maxInput) {
-            processValue(valueList.get(i), mapProcess);
+            processValue(valueList.get(i), mapProcess, valueList.get(i).getDependencies());
             i++;
         }
 
         return mapProcess;
     }
 
-    private static Double processValue(Value value, Map<String, Double> mapProcess) throws CircularDependencyException {
+    private static Double processValue(Value value, Map<String, Double> mapProcess, List<String> dependencies) throws CircularDependencyException {
         if (Status.NEW.equals(value.getStatus())) {
             value.setStatus(Status.PROCESS);
             String polishPostfix = value.getPolishPostfix();
@@ -48,12 +48,13 @@ public class Main {
                 value.setStatus(Status.DONE);
             } else {
                 String[] inputs = polishPostfix.split(" ");
-                Double ret = calculator(inputs, mapProcess);
+                Double ret = calculator(inputs, mapProcess, dependencies);
                 mapProcess.put(value.getKey(), ret);
                 value.setStatus(Status.DONE);
             }
         } else if (Status.PROCESS.equals(value.getStatus())) {
-            throw new CircularDependencyException("Circular dependency between A1 and A2 detected");
+            dependencies.remove(value.getKey());
+            throw new CircularDependencyException(String.format("Circular dependency between %s and %s detected", value.getKey(), String.join(", ", dependencies)));
         }
 
         return mapProcess.get(value.getKey());
@@ -65,7 +66,7 @@ public class Main {
         return matcher.matches();
     }
 
-    private static double calculator(String[] strArr, Map<String, Double> mapProcess) throws CircularDependencyException {
+    private static double calculator(String[] strArr, Map<String, Double> mapProcess, List<String> dependencies) throws CircularDependencyException {
         Stack<Double> operands = new Stack<>();
 
         for(String str : strArr) {
@@ -107,7 +108,8 @@ public class Main {
                         if(d != null){
                             operands.push(d);
                         } else {
-                            operands.push(processValue(mapInput.get(str), mapProcess));
+                            dependencies.add(str);
+                            operands.push(processValue(mapInput.get(str), mapProcess, dependencies));
                         }
                     }
                     break;
@@ -171,11 +173,13 @@ public class Main {
         String key;
         String polishPostfix;
         Status status;
+        List<String> dependencies;
 
         Value(String key, String polishPostfix) {
             this.key = key;
             this.polishPostfix = polishPostfix;
             status = Status.NEW;
+            dependencies = new ArrayList<>();
         }
 
         String getKey() {
@@ -200,6 +204,10 @@ public class Main {
 
         void setStatus(Status status) {
             this.status = status;
+        }
+
+        public List<String> getDependencies() {
+            return dependencies;
         }
     }
 
